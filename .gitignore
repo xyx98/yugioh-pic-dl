@@ -86,3 +86,10 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# db for ygo card
+*.cdb
+
+# dlpath for test
+pics
+
+.vscode
