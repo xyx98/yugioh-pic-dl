@@ -6,11 +6,13 @@ project('yugioh-pic-dl', 'cpp',
 sources = [
             'dbquery.h',
             'dbquery.cpp',
+            'yugioh_pic_dl.h',
             'yugioh_pic_dl.cpp'
           ]
 
 deps = [
   dependency('sqlite3', version: '>=3.34.0'),
+  dependency('libcurl', version: '>=8.0.0')
 ]
 
 executable('yugioh-pic-dl',sources,
