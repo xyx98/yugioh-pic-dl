@@ -30,7 +30,12 @@ int picDL(int32_t cid,std::string dlpath){
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
     CURLcode res = curl_easy_perform(curl);
-    if (res != CURLE_OK) return -2;
+    if (res != CURLE_OK){
+        file.close();
+        if (fs::exists(picPath)) fs::remove(picPath);
+        return -2;
+    };
+    file.close();
     curl_easy_cleanup(curl);
     return 0;
 }
@@ -46,23 +51,26 @@ inline void usage(){
     std::cout << "usage:  yugioh-pic-dl --db cards.cdb --output pics" << std::endl 
         << "\t-h,--help \t\t show help." << std::endl 
         << "\t-d,--db <string> \t\t path of cards.cdb used in ygopro." << std::endl 
-        << "\t-o,--output <string> \t\t path to save downloaded pics." << std::endl;
+        << "\t-o,--output <string> \t\t path to save downloaded pics." << std::endl
+        << "\t-f,--max-fail <int> \t\t stop after target fails,default is 0, disabled" << std::endl;
 }
 
 int main(int argc, char *argv[]){
     // argparse
     int opt;
     int option_index = 0;
+    int max_fail = 0;
 
     bool help = true;
     std::string dbPath;
     std::string picPath;
 
-    const char *optstring = "hd:o:";
+    const char *optstring = "hd:o:f:";
     const struct option long_options[] ={
         {"help",    no_argument,        NULL,  'h'},
         {"db",      required_argument,  NULL,  'd'},
-        {"output",  required_argument,  NULL,  'o'}
+        {"output",  required_argument,  NULL,  'o'},
+        {"max-fail",required_argument,  NULL,  'f'}
     };
     while((opt =getopt_long(argc,argv,optstring,long_options,&option_index))!= -1){  
         switch(opt) {
@@ -74,6 +82,9 @@ int main(int argc, char *argv[]){
                 break;
             case 'o':
                 picPath = optarg;
+                break;
+            case 'f':
+                max_fail = atoi(optarg);
                 break;
             default:
                 help = true;
@@ -100,10 +111,11 @@ int main(int argc, char *argv[]){
             if (picDL(cid,picPath) < 0){
                 std::cerr << "download " << cid << "fail" << std::endl;
                 fail +=1 ;
-                if (fail >= MAXDLFAIL) break;
+                if ( max_fail > 0 && fail >= max_fail) break;
             }
         }
         else break;
     }
+    
     return 0;
 }
