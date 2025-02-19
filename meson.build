@@ -1,6 +1,6 @@
 project('yugioh-pic-dl', 'cpp',
-  version : '0.1',
-  default_options : ['buildtype=release','warning_level=3', 'cpp_std=c++17'])
+  version : '1.0',
+  default_options : ['buildtype=release','warning_level=3', 'cpp_std=c++17','b_lto=true','optimization=3'])
 
 
 sources = [
