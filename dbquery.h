@@ -12,6 +12,7 @@ private:
     sqlite3_stmt* statement;
 public:
     bool isOK; //true for open database success
+    bool isFin; //true for finish
     int32_t nextID();
 
     dbquery(const char* dbFilePath);

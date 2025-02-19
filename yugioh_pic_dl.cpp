@@ -2,9 +2,11 @@
 #include <fstream>
 #include <filesystem>
 #include <string>
+#include <vector>
 #include <getopt.h>
 
 #include <curl/curl.h>
+#include <omp.h>
 
 #include "dbquery.h"
 #include "yugioh_pic_dl.h"
@@ -49,28 +51,32 @@ static size_t writeCallback(void* ptr, size_t size, size_t nmemb, std::ofstream*
 
 inline void usage(){
     std::cout << "usage:  yugioh-pic-dl --db cards.cdb --output pics" << std::endl 
-        << "\t-h,--help \t\t show help." << std::endl 
+        << "\t-h,--help \t\t\t show help." << std::endl 
         << "\t-d,--db <string> \t\t path of cards.cdb used in ygopro." << std::endl 
         << "\t-o,--output <string> \t\t path to save downloaded pics." << std::endl
-        << "\t-f,--max-fail <int> \t\t stop after target fails,default is 0, disabled" << std::endl;
+        << "\t-f,--max-fail <int> \t\t stop after target fails,default is 0, disabled." << std::endl
+        << "\t-t,--threads <int> \t\t thread for download,default is " << DTHREAD <<"." << std::endl;
 }
 
 int main(int argc, char *argv[]){
     // argparse
     int opt;
     int option_index = 0;
-    int max_fail = 0;
 
-    bool help = true;
+    bool help = false;
     std::string dbPath;
     std::string picPath;
+    int max_fail = 0;
+    int thread = DTHREAD;
 
-    const char *optstring = "hd:o:f:";
+
+    const char *optstring = "hd:o:f:t:";
     const struct option long_options[] ={
         {"help",    no_argument,        NULL,  'h'},
         {"db",      required_argument,  NULL,  'd'},
         {"output",  required_argument,  NULL,  'o'},
-        {"max-fail",required_argument,  NULL,  'f'}
+        {"max-fail",required_argument,  NULL,  'f'},
+        {"threads" ,required_argument,  NULL,  't'}
     };
     while((opt =getopt_long(argc,argv,optstring,long_options,&option_index))!= -1){  
         switch(opt) {
@@ -86,12 +92,15 @@ int main(int argc, char *argv[]){
             case 'f':
                 max_fail = atoi(optarg);
                 break;
+            case 't':
+                thread = atoi(optarg);
+                break;
             default:
                 help = true;
        }
     } 
 
-    if(help && (dbPath.empty()||picPath.empty())){
+    if(help || (dbPath.empty()||picPath.empty())){
         usage();
         return 0;
     }
@@ -103,19 +112,25 @@ int main(int argc, char *argv[]){
         return 0;
     }
     
-    int32_t cid=0;
-    int fail = 0;
+    omp_set_num_threads(thread);
+    
+    volatile int fail=0;
+    std::vector<int32_t> cids;
     while(true){
-        cid=query.nextID();
-        if (cid>=0){
-            if (picDL(cid,picPath) < 0){
-                std::cerr << "download " << cid << "fail" << std::endl;
-                fail +=1 ;
-                if ( max_fail > 0 && fail >= max_fail) break;
-            }
-        }
+        int32_t cid=query.nextID();
+        if (cid>=0) cids.push_back(cid);
         else break;
     }
-    
+
+    #pragma omp parallel for shared(fail)
+    for (int i=0;(i< cids.size()) ;i++){
+        if (max_fail > 0 && fail >= max_fail) continue;
+        int32_t cid=cids[i];
+        if (picDL(cid,picPath) < 0){
+            std::cerr << "download " << cid << "fail" << std::endl;
+            fail +=1 ;
+        }
+    } 
+
     return 0;
 }

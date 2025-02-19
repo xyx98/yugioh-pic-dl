@@ -15,14 +15,20 @@ dbquery::dbquery(const char* dbFilePath){
     else{
         isOK=false;
     }
+    isFin=false;
 }
 
 //query id for next card in database,-1 for end.
 int32_t dbquery::nextID(){
+    if (isFin) return -1;
+    
     if (sqlite3_step(statement) == SQLITE_ROW){
         return sqlite3_column_int(statement, 0);
     }
-    else return -1;
+    else{
+        isFin=true;
+        return -1;
+    }
 }
 
 dbquery::~dbquery(){

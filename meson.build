@@ -12,7 +12,8 @@ sources = [
 
 deps = [
   dependency('sqlite3', version: '>=3.34.0'),
-  dependency('libcurl', version: '>=8.0.0')
+  dependency('libcurl', version: '>=8.0.0'),
+  dependency('openmp')
 ]
 
 executable('yugioh-pic-dl',sources,

@@ -1,8 +1,8 @@
 #ifndef YPDL_H
 #define YPDL_H
 
-#define BASEURL "https://images.ygoprodeck.com/images/cards_cropped/"
-#define MAXDLFAIL 20
+#define BASEURL "https://images.ygoprodeck.com/images/cards_cropped/" 
+#define DTHREAD 8 //default threads
 
 #include <iostream>
 #include <fstream>
