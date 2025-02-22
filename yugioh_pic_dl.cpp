@@ -70,8 +70,6 @@ inline void usage(){
 }
 
 int main(int argc, char *argv[]){
-    picDL(97651499,"test");
-    //picDL(10000,"test");
     // argparse
     int opt;
     int option_index = 0;
