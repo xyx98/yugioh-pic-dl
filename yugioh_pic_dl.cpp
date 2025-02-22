@@ -19,25 +19,36 @@ int picDL(int32_t cid,std::string dlpath){
 
     std::string picName = std::to_string(cid)+".jpg";
     CURL *curl = curl_easy_init();
-    if (curl == nullptr) return -1;
+    if (curl == nullptr) return -1; //setup curl fail
     fs::path picPath = basedir / picName;
 
     if (fs::exists(picPath)) return 1; //check if downloaded 
 
     std::ofstream file(picPath, std::ios::binary);
 
+    long response_code;
     curl_easy_setopt(curl, CURLOPT_URL, (BASEURL+picName).c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &file);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
     CURLcode res = curl_easy_perform(curl);
+    file.close();
+
     if (res != CURLE_OK){
         file.close();
         if (fs::exists(picPath)) fs::remove(picPath);
-        return -2;
+        curl_easy_cleanup(curl);
+        return -2; //download fail
     };
-    file.close();
+
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+    if (response_code!=200){
+        if (fs::exists(picPath)) fs::remove(picPath);
+        curl_easy_cleanup(curl);
+        if (response_code==404) return 2; // 404, pic not found on website.
+        return -3; 
+    }
     curl_easy_cleanup(curl);
     return 0;
 }
@@ -59,6 +70,8 @@ inline void usage(){
 }
 
 int main(int argc, char *argv[]){
+    picDL(97651499,"test");
+    //picDL(10000,"test");
     // argparse
     int opt;
     int option_index = 0;
@@ -126,9 +139,13 @@ int main(int argc, char *argv[]){
     for (int i=0;(i< cids.size()) ;i++){
         if (max_fail > 0 && fail >= max_fail) continue;
         int32_t cid=cids[i];
-        if (picDL(cid,picPath) < 0){
+        int rescode = picDL(cid,picPath);
+        if ( rescode < 0){
             std::cerr << "download " << cid << "fail" << std::endl;
             fail +=1 ;
+        }
+        else if (rescode == 2){ //if 404.
+            std::cout << "card " << cid << " not found on " << BASEURL << std::endl;
         }
     } 
 
