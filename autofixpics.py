@@ -1,7 +1,9 @@
-import os
+import os,sys
+import argparse
 from PIL import Image,ImageOps
 from multiprocessing import pool
 from functools import partial
+
 
 def process(i,indir,outdir):
     try:
@@ -44,4 +46,18 @@ def main(indir='pics',outdir='fix',suffix=['jpg','png','webp'],thread=8,skipexis
         #process(i,indir,outdir)
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-i','--input', nargs='?',default='pics',type=str ,help='input dir for downloaded pics,default is pics.')
+    parser.add_argument('-o','--output',nargs='?',default='fix' ,type=str ,help='output dir for pics,default is fix')
+    parser.add_argument('-t','--thread',nargs='?',default=8     ,type=int ,help='set used thread,default is 8.')
+    
+    parser.add_argument('-s','--suffix',nargs='?',default="jpg,png,webp",type=str,help='set file extensions to process.')
+    parser.add_argument('-ns','--no-skip',action="store_true",default=False,help='do not skip processed file.')
+    args=parser.parse_args(sys.argv[1:])
+    print(args)
+    main(indir=args.input,
+         outdir=args.output,
+         thread=args.thread,
+         suffix=args.suffix.split(','),
+         skipexist=not args.no_skip
+         )
